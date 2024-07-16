@@ -4,16 +4,20 @@ import pandas as pd
 import plotly.graph_objects as go
 from sqlalchemy import create_engine
 
+
+
+# I have used data "yellow_tripdata_2016-01.csv" (Stored in sql alchemy)
+
 # Function to load the dataset using SQLAlchemy
 @st.cache_resource()
 def load_data():
     # Create a connection to the database
-    engine = create_engine('sqlite:///upliance_test.db')
+    engine = create_engine('sqlite:///upliance_data.db')
 
     # Define the query to fetch the necessary columns
     query = '''
     SELECT tpep_pickup_datetime, tpep_dropoff_datetime, dropoff_longitude, dropoff_latitude
-    FROM your_table_name
+    FROM analytics
     '''
 
     # Fetch data and load into DataFrame
@@ -40,7 +44,7 @@ def calculate_trip_durations(df):
     long_trips = df[df['trip_duration'] > 3660]  # 3660 seconds = 61 minutes
     return short_trips, long_trips
 
-# Main function to render the Streamlit app
+# Main function to render the Streamlit app (Visualisation In Streamlit)
 def main():
     # Set page configuration
     st.set_page_config(
