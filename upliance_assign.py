@@ -1,45 +1,32 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-from sqlalchemy import create_engine
+from pymongo import MongoClient
 
-# Function to load the dataset using SQLAlchemy
+# Function to load the datasets from MongoDB
 @st.cache_resource()
 def load_data():
-    # Create a connection to the database
-    engine = create_engine('sqlite:///upliance_data.db')  
 
-    # Define the query to fetch the necessary columns
-    query = '''
-    SELECT tpep_pickup_datetime, tpep_dropoff_datetime, dropoff_longitude, dropoff_latitude
-    FROM analytics
-    '''
+    # Create a connection to the MongoDB database OR Fetch Preprocessed data locally
+    # client = MongoClient('mongodb+srv://kajdhfywgdUDVHsdvhsvds+shdvhsd/svdhsv/') 
+    # db = client['upliance_data']
+    # # Load data into DataFrames
+    # filtered_trips_df = pd.DataFrame(list(db['filtered_trips'].find()))
+    # short_trips_df = pd.DataFrame(list(db['short_trips'].find()))
+    # long_trips_df = pd.DataFrame(list(db['long_trips'].find()))
+    # trips_by_hour_df = pd.DataFrame(list(db['trips_by_hour'].find()))
 
-    # Fetch data and load into DataFrame
-    df = pd.read_sql(query, con=engine)
+# Fetch Pre-Processed data from CSV
+    filtered_trips_df=pd.read_csv("filtered_df.csv")
+    short_trips_df=pd.read_csv("short_trips.csv")
+    long_trips_df=pd.read_csv("long_trips.csv")
+    trips_by_hour_df=pd.read_csv("trips_by_hour.csv")
 
-    # Filter rows with dropoff location near Crate and Barrel
-    crate_and_barrel_latitude = 40.7258
-    crate_and_barrel_longitude = -74.0047
-    threshold = 0.001
-    filtered_df = df[
-        (df['dropoff_latitude'].between(crate_and_barrel_latitude - threshold, crate_and_barrel_latitude + threshold)) &
-        (df['dropoff_longitude'].between(crate_and_barrel_longitude - threshold, crate_and_barrel_longitude + threshold))
-    ].copy()
+    return filtered_trips_df, short_trips_df, long_trips_df, trips_by_hour_df
 
-    return filtered_df
 
-# Function to calculate trip durations
-def calculate_trip_durations(df):
-    df['tpep_pickup_datetime'] = pd.to_datetime(df['tpep_pickup_datetime'])
-    df['tpep_dropoff_datetime'] = pd.to_datetime(df['tpep_dropoff_datetime'])
-    df['trip_duration'] = (df['tpep_dropoff_datetime'] - df['tpep_pickup_datetime']).dt.total_seconds()
 
-    short_trips = df[df['trip_duration'] < 600]  # 600 seconds = 10 minutes
-    long_trips = df[df['trip_duration'] > 3660]  # 3660 seconds = 61 minutes
-    return short_trips, long_trips
-
-# Main function to render the Streamlit app
+# Main function to render the Streamlit app (Visualisation The Data)
 def main():
     # Set page configuration
     st.set_page_config(
@@ -55,18 +42,15 @@ def main():
     st.title("NYC Yellow Taxi Trip Data Analysis")
 
     # Load data
-    df = load_data()
+    filtered_trips_df, short_trips_df, long_trips_df, trips_by_hour_df = load_data()
 
-    # Display filtered data (first 1000 rows for preview)
+    # Display filtered data (previews)
     st.subheader("Trips Ending at Crate and Barrel Flagship Store")
-    st.dataframe(df.head(1000), use_container_width=True)  
-
-    # Calculate trip durations
-    short_trips, long_trips = calculate_trip_durations(df)
+    st.dataframe(filtered_trips_df.head(1000), use_container_width=True)  
 
     # Compute counts of short and long trips
-    num_short_trips = short_trips.shape[0]
-    num_long_trips = long_trips.shape[0]
+    num_short_trips = short_trips_df.shape[0]
+    num_long_trips = long_trips_df.shape[0]
 
     # Display trip durations
     st.subheader("Trip Duration Analysis")
@@ -90,10 +74,8 @@ def main():
     st.markdown("")
     # Time of day visualization using Plotly
     st.subheader("Time of Day Visualization for Trips Ending at Crate and Barrel")
-    df['end_hour'] = df['tpep_dropoff_datetime'].dt.hour
-    trips_by_hour = df['end_hour'].value_counts().sort_index()
-
-    fig = go.Figure(data=[go.Bar(x=trips_by_hour.index, y=trips_by_hour.values)])
+    trips_by_hour_df = trips_by_hour_df.sort_values(by='hour')
+    fig = go.Figure(data=[go.Bar(x=trips_by_hour_df['hour'], y=trips_by_hour_df['number_of_trips'])])
     fig.update_layout(
         title='Trips Ending at Crate and Barrel by Hour of the Day',
         xaxis_title='Hour of the Day',
@@ -107,3 +89,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
