@@ -8,7 +8,7 @@ from sqlalchemy import create_engine
 @st.cache_resource()
 def load_data():
     # Create a connection to the database
-    engine = create_engine('sqlite:///upliance_test.db')  # Update with your database connection string
+    engine = create_engine('sqlite:///upliance_test.db')
 
     # Define the query to fetch the necessary columns
     query = '''
